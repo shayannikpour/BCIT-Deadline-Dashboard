@@ -1,13 +1,16 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowUpRight, BookOpenCheck, CalendarDays, CheckCircle2, Clock3, GraduationCap, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type DeadlineType = 'Assignment' | 'Quiz';
-type Deadline = { id: string; title: string; course: string; courseShort: string; type: DeadlineType; due: string; url: string };
+type Deadline = { id: string; title: string; course: string; courseShort: string; type: DeadlineType; due: string; url: string; submitted?: boolean; closes?: boolean };
 
-const deadlines: Deadline[] = [
+const checkedAt = '2026-09-17T15:46:00-07:00';
+const recordedDeadlines: Deadline[] = [
+  { id: 'mktg-chapter-one', title: 'Chapter 1 Quiz — Requires Respondus LockDown Browser', course: 'Essentials of Marketing', courseShort: 'MKTG 1102', type: 'Quiz', due: '2026-09-20T23:59:00-07:00', closes: true, url: 'https://learn.bcit.ca/d2l/lms/quizzing/quizzing.d2l?ou=1230783' },
+  { id: 'bsys-file-management', title: 'File Management Assignment', course: 'Business Information Systems', courseShort: 'BSYS 1000', type: 'Assignment', due: '2026-09-25T23:59:00-07:00', submitted: true, url: 'https://learn.bcit.ca/d2l/lms/dropbox/dropbox.d2l?ou=1233493' },
   { id: 'comm-intro', title: 'Self-Introduction Video', course: 'Business Communication 1', courseShort: 'COMM 1100', type: 'Assignment', due: '2026-09-11T23:59:00-07:00', url: 'https://learn.bcit.ca/d2l/lms/dropbox/dropbox.d2l?ou=1230765' },
   { id: 'mktg-linkedin', title: 'Assignment #1 LinkedIn Report', course: 'Professional Sales Skills & CRM', courseShort: 'MKTG 2243', type: 'Assignment', due: '2026-10-02T23:59:00-07:00', url: 'https://learn.bcit.ca/d2l/lms/dropbox/dropbox.d2l?ou=1239803' },
   { id: 'comm-plagiarism', title: 'What is plagiarism? What is the big deal?', course: 'Business Communication 1', courseShort: 'COMM 1100', type: 'Quiz', due: '2026-09-27T23:59:00-07:00', url: 'https://learn.bcit.ca/d2l/lms/quizzing/quizzing.d2l?ou=1230765' },
@@ -27,28 +30,39 @@ const deadlines: Deadline[] = [
   { id: 'comm-exit', title: 'Exit Interview', course: 'Business Communication 1', courseShort: 'COMM 1100', type: 'Assignment', due: '2026-12-12T00:59:00-08:00', url: 'https://learn.bcit.ca/d2l/lms/dropbox/dropbox.d2l?ou=1230765' },
 ];
 
+// Retain previous observations without presenting inaccessible courses as freshly verified.
+const unverifiedDeadlines = recordedDeadlines.filter((item) => item.courseShort === 'COMM 1100');
+const deadlines = recordedDeadlines.filter((item) => item.courseShort !== 'COMM 1100');
 const filters = ['All', 'Assignment', 'Quiz'] as const;
 const sortedDeadlines = [...deadlines].sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
 const courseStyles: Record<string, string> = {
   'COMM 1100': 'bg-blue-50 text-blue-700 ring-blue-100',
   'MKTG 2243': 'bg-orange-50 text-orange-700 ring-orange-100',
   'OPMT 1110': 'bg-violet-50 text-violet-700 ring-violet-100',
+  'MKTG 1102': 'bg-amber-50 text-amber-700 ring-amber-100',
+  'BSYS 1000': 'bg-emerald-50 text-emerald-700 ring-emerald-100',
 };
 const dateFormat = new Intl.DateTimeFormat('en-CA', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/Vancouver' });
 const timeFormat = new Intl.DateTimeFormat('en-CA', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Vancouver' });
 
-function relativeLabel(date: Date) {
-  const today = new Date();
-  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const days = Math.round((target.getTime() - start.getTime()) / 86400000);
-  if (days === 0) return 'Due today';
-  if (days === 1) return 'Due tomorrow';
+const localDay = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'America/Vancouver' });
+function relativeLabel(date: Date, now: Date, closes = false) {
+  if (date.getTime() < now.getTime()) return 'Date passed';
+  const days = Math.round((Date.parse(localDay.format(date)) - Date.parse(localDay.format(now))) / 86400000);
+  const verb = closes ? 'Closes' : 'Due';
+  if (days === 0) return `${verb} today`;
+  if (days === 1) return `${verb} tomorrow`;
   if (days > 1 && days <= 7) return `${days} days left`;
   return dateFormat.format(date);
 }
 
 export default function Home() {
+  const [now, setNow] = useState(() => new Date(checkedAt));
+  useEffect(() => {
+    setNow(new Date());
+    const timer = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
   const [filter, setFilter] = useState<(typeof filters)[number]>('All');
   const [query, setQuery] = useState('');
   const visible = useMemo(() => sortedDeadlines.filter((item) => {
@@ -56,7 +70,7 @@ export default function Home() {
     const haystack = `${item.title} ${item.course} ${item.courseShort}`.toLowerCase();
     return matchesType && haystack.includes(query.toLowerCase());
   }), [filter, query]);
-  const next = sortedDeadlines[0];
+  const next = sortedDeadlines.find((item) => !item.submitted && new Date(item.due) >= now);
   const assignments = deadlines.filter((item) => item.type === 'Assignment').length;
   const quizzes = deadlines.filter((item) => item.type === 'Quiz').length;
 
@@ -68,19 +82,19 @@ export default function Home() {
             <div className="grid size-10 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm"><GraduationCap className="size-5" /></div>
             <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">BCIT Course Desk</p><h1 className="text-lg font-semibold tracking-tight">Deadline dashboard</h1></div>
           </div>
-          <div className="hidden items-center gap-2 text-sm text-muted-foreground sm:flex"><span className="size-2 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgb(16_185_129/12%)]" />Checked Sep 11 at 6:16 PM</div>
+          <div className="hidden items-center gap-2 text-sm text-muted-foreground sm:flex"><span className="size-2 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgb(16_185_129/12%)]" />Checked Sep 17 at 3:46 PM PDT</div>
         </header>
 
         <section className="grid gap-5 pb-8 pt-8 lg:grid-cols-[1.35fr_0.65fr]">
           <div className="relative overflow-hidden rounded-[28px] bg-primary p-7 text-primary-foreground shadow-[0_18px_55px_rgb(19_55_64/12%)] sm:p-9">
             <div className="absolute -right-14 -top-16 size-52 rounded-full border border-white/10" /><div className="absolute -right-3 -top-4 size-28 rounded-full bg-white/[0.04]" />
             <p className="mb-8 text-xs font-semibold uppercase tracking-[0.18em] text-white/60">Next up</p>
-            <div className="relative max-w-xl">
-              <span className="inline-flex rounded-full bg-[#e9ff9e] px-3 py-1 text-xs font-semibold text-[#273c10]">{relativeLabel(new Date(next.due))}</span>
+            {next ? <div className="relative max-w-xl">
+              <span className="inline-flex rounded-full bg-[#e9ff9e] px-3 py-1 text-xs font-semibold text-[#273c10]">{relativeLabel(new Date(next.due), now, next.closes)}</span>
               <h2 className="mt-4 text-3xl font-semibold leading-tight tracking-[-0.035em] sm:text-[42px]">{next.title}</h2>
-              <p className="mt-3 text-sm text-white/65">{next.courseShort} · {next.course}</p>
+              <p className="mt-3 text-sm text-white/65">{next.courseShort} · {next.course} · {next.closes ? 'Availability ends' : 'Due date'}</p>
               <div className="mt-7 flex flex-wrap items-center gap-4 text-sm"><span className="inline-flex items-center gap-2"><CalendarDays className="size-4 text-[#e9ff9e]" />{dateFormat.format(new Date(next.due))}</span><span className="inline-flex items-center gap-2"><Clock3 className="size-4 text-[#e9ff9e]" />{timeFormat.format(new Date(next.due))}</span></div>
-            </div>
+            </div> : <p className="relative text-2xl font-semibold">No upcoming unfinished items in the latest check.</p>}
           </div>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-1">
             <div className="rounded-[24px] border bg-card p-5 shadow-sm"><div className="flex items-start justify-between"><BookOpenCheck className="size-5 text-primary" /><span className="text-xs text-muted-foreground">Fall 2026</span></div><p className="mt-7 text-3xl font-semibold tracking-tight">{assignments}</p><p className="mt-1 text-sm text-muted-foreground">Assignments posted</p></div>
@@ -89,6 +103,10 @@ export default function Home() {
         </section>
 
         <section>
+          <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-950">
+            <p className="font-semibold">COMM 1100 dates could not be refreshed</p>
+            <p className="mt-1">This course is absent from your current Fall course list, and Learning Hub denies access. Its previous dates are retained below for reference and excluded from current totals.</p>
+          </div>
           <div className="flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
             <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Fall 2026</p><h2 className="mt-1 text-2xl font-semibold tracking-tight">Upcoming deadlines</h2></div>
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -100,16 +118,21 @@ export default function Home() {
             {visible.map((item) => {
               const due = new Date(item.due);
               return <article key={item.id} className="group grid gap-3 py-5 sm:grid-cols-[116px_minmax(0,1fr)_160px_34px] sm:items-center">
-                <div><p className="text-sm font-semibold">{dateFormat.format(due)}</p><p className="mt-0.5 text-xs text-muted-foreground">{timeFormat.format(due)}</p></div>
+                <div><p className="text-sm font-semibold">{dateFormat.format(due)}</p><p className="mt-0.5 text-xs text-muted-foreground">{timeFormat.format(due)}</p><p className="mt-1 text-[11px] text-muted-foreground">{item.closes ? 'Closes' : 'Due'}</p></div>
                 <div><div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${courseStyles[item.courseShort]}`}>{item.courseShort}</span><span className="text-xs font-medium text-muted-foreground">{item.type}</span></div><h3 className="mt-2 font-semibold tracking-tight">{item.title}</h3><p className="mt-0.5 text-sm text-muted-foreground">{item.course}</p></div>
-                <div className="sm:text-right"><span className="inline-flex rounded-full bg-muted px-3 py-1.5 text-xs font-semibold text-muted-foreground">{relativeLabel(due)}</span></div>
+                <div className="sm:text-right"><span className={`inline-flex rounded-full px-3 py-1.5 text-xs font-semibold ${item.submitted ? 'bg-emerald-50 text-emerald-700' : 'bg-muted text-muted-foreground'}`}>{item.submitted ? 'Submitted' : relativeLabel(due, now, item.closes)}</span></div>
                 <a href={item.url} target="_blank" rel="noreferrer" aria-label={`Open ${item.title} in Learning Hub`} className="grid size-9 place-items-center rounded-xl text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></a>
               </article>;
             })}
             {visible.length === 0 && <p className="py-16 text-center text-sm text-muted-foreground">No deadlines match this view.</p>}
           </div>
         </section>
-        <footer className="mt-8 flex flex-col gap-2 border-t pt-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><p>Current-term deadlines only. Stale 2025 items were excluded.</p><p>Next automatic check: Sep 12 at 6:00 PM PDT</p></footer>
+        <details className="mt-6 rounded-2xl border bg-card p-5">
+          <summary className="cursor-pointer text-sm font-semibold">Previous COMM 1100 dates · unverified since Sep 11 ({unverifiedDeadlines.length} items)</summary>
+          <p className="mt-3 text-sm text-muted-foreground">These are earlier observations, not confirmed current deadlines. Check with your instructor if you still expect access to this course.</p>
+          <ul className="mt-4 divide-y">{unverifiedDeadlines.map((item) => <li key={item.id} className="flex flex-col gap-1 py-3 text-sm sm:flex-row sm:justify-between"><a className="underline underline-offset-4" href={item.url} target="_blank" rel="noreferrer">{item.title}</a><span className="shrink-0 text-muted-foreground">{dateFormat.format(new Date(item.due))} · {timeFormat.format(new Date(item.due))}</span></li>)}</ul>
+        </details>
+        <footer className="mt-8 flex flex-col gap-2 border-t pt-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><p>Checked Sep 17, 3:46 PM PDT. All times Vancouver. Stale 2025 items excluded.</p><p>Next automatic check: Sep 17 at 6:00 PM PDT</p></footer>
       </div>
     </main>
   );
