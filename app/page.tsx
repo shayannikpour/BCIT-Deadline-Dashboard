@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowUpRight, BookOpenCheck, CalendarDays, CheckCircle2, Clock3, GraduationCap, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { nextPendingDeadline, relativeLabel } from '@/lib/deadline-time';
 
 type DeadlineType = 'Assignment' | 'Quiz';
 type Deadline = { id: string; title: string; course: string; courseShort: string; type: DeadlineType; due: string; url: string; submitted?: boolean; closes?: boolean };
@@ -45,23 +46,27 @@ const courseStyles: Record<string, string> = {
 const dateFormat = new Intl.DateTimeFormat('en-CA', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/Vancouver' });
 const timeFormat = new Intl.DateTimeFormat('en-CA', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Vancouver' });
 
-const localDay = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'America/Vancouver' });
-function relativeLabel(date: Date, now: Date, closes = false) {
-  if (date.getTime() < now.getTime()) return 'Date passed';
-  const days = Math.round((Date.parse(localDay.format(date)) - Date.parse(localDay.format(now))) / 86400000);
-  const verb = closes ? 'Closes' : 'Due';
-  if (days === 0) return `${verb} today`;
-  if (days === 1) return `${verb} tomorrow`;
-  if (days > 1 && days <= 7) return `${days} days left`;
-  return dateFormat.format(date);
-}
-
 export default function Home() {
   const [now, setNow] = useState(() => new Date(checkedAt));
   useEffect(() => {
-    setNow(new Date());
-    const timer = setInterval(() => setNow(new Date()), 60000);
-    return () => clearInterval(timer);
+    let timer: ReturnType<typeof setTimeout>;
+    const refresh = () => {
+      clearTimeout(timer);
+      setNow(new Date());
+      // Align with minute boundaries, including midnight and posted due times.
+      timer = setTimeout(refresh, 60000 - (Date.now() % 60000) + 5);
+    };
+    const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
+    refresh();
+    window.addEventListener('focus', refresh);
+    window.addEventListener('pageshow', refresh);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('pageshow', refresh);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, []);
   const [filter, setFilter] = useState<(typeof filters)[number]>('All');
   const [query, setQuery] = useState('');
@@ -70,7 +75,7 @@ export default function Home() {
     const haystack = `${item.title} ${item.course} ${item.courseShort}`.toLowerCase();
     return matchesType && haystack.includes(query.toLowerCase());
   }), [filter, query]);
-  const next = sortedDeadlines.find((item) => !item.submitted && new Date(item.due) >= now);
+  const next = nextPendingDeadline(sortedDeadlines, now);
   const assignments = deadlines.filter((item) => item.type === 'Assignment').length;
   const quizzes = deadlines.filter((item) => item.type === 'Quiz').length;
 
@@ -108,7 +113,7 @@ export default function Home() {
             <p className="mt-1">This course is absent from your current Fall course list, and Learning Hub denies access. Its previous dates are retained below for reference and excluded from current totals.</p>
           </div>
           <div className="flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-            <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Fall 2026</p><h2 className="mt-1 text-2xl font-semibold tracking-tight">Upcoming deadlines</h2></div>
+            <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Today · {dateFormat.format(now)}</p><h2 className="mt-1 text-2xl font-semibold tracking-tight">Course deadlines</h2><p className="mt-1 text-xs text-muted-foreground">Days remaining update automatically · Vancouver time</p></div>
             <div className="flex flex-col gap-3 sm:flex-row">
               <label className="flex h-10 min-w-64 items-center gap-2 rounded-xl border bg-card px-3 text-sm shadow-sm focus-within:ring-2 focus-within:ring-ring/30"><Search className="size-4 text-muted-foreground" /><span className="sr-only">Search deadlines</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search course or task" className="w-full bg-transparent outline-none placeholder:text-muted-foreground" /></label>
               <div className="flex rounded-xl border bg-card p-1 shadow-sm" aria-label="Filter deadlines">{filters.map((item) => <Button key={item} size="sm" variant={filter === item ? 'secondary' : 'ghost'} onClick={() => setFilter(item)} className="rounded-lg px-3">{item === 'Assignment' ? 'Assignments' : item === 'Quiz' ? 'Quizzes' : item}</Button>)}</div>
@@ -132,7 +137,7 @@ export default function Home() {
           <p className="mt-3 text-sm text-muted-foreground">These are earlier observations, not confirmed current deadlines. Check with your instructor if you still expect access to this course.</p>
           <ul className="mt-4 divide-y">{unverifiedDeadlines.map((item) => <li key={item.id} className="flex flex-col gap-1 py-3 text-sm sm:flex-row sm:justify-between"><a className="underline underline-offset-4" href={item.url} target="_blank" rel="noreferrer">{item.title}</a><span className="shrink-0 text-muted-foreground">{dateFormat.format(new Date(item.due))} · {timeFormat.format(new Date(item.due))}</span></li>)}</ul>
         </details>
-        <footer className="mt-8 flex flex-col gap-2 border-t pt-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><p>Checked Sep 17, 3:46 PM PDT. All times Vancouver. Stale 2025 items excluded.</p><p>Next automatic check: Sep 17 at 6:00 PM PDT</p></footer>
+        <footer className="mt-8 flex flex-col gap-2 border-t pt-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><p>Learning Hub last checked Sep 17, 3:46 PM PDT. All times Vancouver.</p><p>Learning Hub refresh scheduled daily at 6:00 PM Vancouver time</p></footer>
       </div>
     </main>
   );
