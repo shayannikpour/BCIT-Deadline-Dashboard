@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { nextPendingDeadline, relativeLabel } from '@/lib/deadline-time';
 
 type DeadlineType = 'Assignment' | 'Quiz';
-type Deadline = { id: string; title: string; course: string; courseShort: string; type: DeadlineType; due: string; url: string; submitted?: boolean; closes?: boolean };
+type Deadline = { id: string; title: string; course: string; courseShort: string; type: DeadlineType; due: string; url: string; submitted?: boolean; closes?: boolean; platform?: 'Connect'; sourceTime?: string };
 
 const checkedAt = '2026-09-17T15:46:00-07:00';
 const recordedDeadlines: Deadline[] = [
@@ -32,8 +32,23 @@ const recordedDeadlines: Deadline[] = [
 ];
 
 // Retain previous observations without presenting inaccessible courses as freshly verified.
-const unverifiedDeadlines = recordedDeadlines.filter((item) => item.courseShort === 'COMM 1100');
-const deadlines = recordedDeadlines.filter((item) => item.courseShort !== 'COMM 1100');
+const connectDeadlines: Deadline[] = [
+  ['buyer-behaviour', 'Buyer Behaviour Mini Sim', '2026-09-20'],
+  ['market-research', 'Market Research Mini Sim', '2026-09-27'],
+  ['marketing-metrics', 'Marketing Metrics Mini Sim', '2026-10-04'],
+  ['segmentation', 'Understanding Segmentation & the Impact on Marketing Mini Sim', '2026-10-11'],
+  ['pricing-strategies', 'Pricing Strategies & the Impact on Sales Results Mini Sim', '2026-10-18'],
+  ['full-sim-manual', 'Practice Marketing Full Simulation Student Manual', '2026-12-12'],
+  ['full-sim-orientation', 'Practice Marketing Full Simulation Orientation Video', '2026-12-12'],
+  ['full-sim-tutorial', 'Practice Marketing Full Simulation - Tutorial', '2026-12-12'],
+  ['student-manual', 'Practice Marketing Student Manual', '2026-12-12'],
+].map(([id, title, date]) => ({
+  id: `connect-${id}`, title, course: 'Essentials of Marketing', courseShort: 'MKTG 1102',
+  type: 'Assignment', platform: 'Connect', due: `${date}T23:59:00-07:00`,
+  // Preserve the explicit PDT offset printed in the supplied screenshots, including December.
+  sourceTime: '11:59 PM PDT', url: 'https://newconnect.mheducation.com/student/class/section/157271556',
+}));
+const deadlines = [...recordedDeadlines.filter((item) => item.courseShort !== 'COMM 1100'), ...connectDeadlines];
 const filters = ['All', 'Assignment', 'Quiz'] as const;
 const sortedDeadlines = [...deadlines].sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
 const courseStyles: Record<string, string> = {
@@ -72,7 +87,7 @@ export default function Home() {
   const [query, setQuery] = useState('');
   const visible = useMemo(() => sortedDeadlines.filter((item) => {
     const matchesType = filter === 'All' || item.type === filter;
-    const haystack = `${item.title} ${item.course} ${item.courseShort}`.toLowerCase();
+    const haystack = `${item.title} ${item.course} ${item.courseShort} ${item.platform ?? 'Learning Hub'}`.toLowerCase();
     return matchesType && haystack.includes(query.toLowerCase());
   }), [filter, query]);
   const next = nextPendingDeadline(sortedDeadlines, now);
@@ -97,8 +112,8 @@ export default function Home() {
             {next ? <div className="relative max-w-xl">
               <span className="inline-flex rounded-full bg-[#e9ff9e] px-3 py-1 text-xs font-semibold text-[#273c10]">{relativeLabel(new Date(next.due), now, next.closes)}</span>
               <h2 className="mt-4 text-3xl font-semibold leading-tight tracking-[-0.035em] sm:text-[42px]">{next.title}</h2>
-              <p className="mt-3 text-sm text-white/65">{next.courseShort} · {next.course} · {next.closes ? 'Availability ends' : 'Due date'}</p>
-              <div className="mt-7 flex flex-wrap items-center gap-4 text-sm"><span className="inline-flex items-center gap-2"><CalendarDays className="size-4 text-[#e9ff9e]" />{dateFormat.format(new Date(next.due))}</span><span className="inline-flex items-center gap-2"><Clock3 className="size-4 text-[#e9ff9e]" />{timeFormat.format(new Date(next.due))}</span></div>
+              <p className="mt-3 text-sm text-white/65">{next.courseShort} · {next.platform ?? 'Learning Hub'} · {next.closes ? 'Availability ends' : 'Due date'}</p>
+              <div className="mt-7 flex flex-wrap items-center gap-4 text-sm"><span className="inline-flex items-center gap-2"><CalendarDays className="size-4 text-[#e9ff9e]" />{dateFormat.format(new Date(next.due))}</span><span className="inline-flex items-center gap-2"><Clock3 className="size-4 text-[#e9ff9e]" />{next.sourceTime ?? timeFormat.format(new Date(next.due))}</span></div>
             </div> : <p className="relative text-2xl font-semibold">No upcoming unfinished items in the latest check.</p>}
           </div>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-1">
@@ -108,10 +123,6 @@ export default function Home() {
         </section>
 
         <section>
-          <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-950">
-            <p className="font-semibold">COMM 1100 dates could not be refreshed</p>
-            <p className="mt-1">This course is absent from your current Fall course list, and Learning Hub denies access. Its previous dates are retained below for reference and excluded from current totals.</p>
-          </div>
           <div className="flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
             <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Today · {dateFormat.format(now)}</p><h2 className="mt-1 text-2xl font-semibold tracking-tight">Course deadlines</h2><p className="mt-1 text-xs text-muted-foreground">Days remaining update automatically · Vancouver time</p></div>
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -123,21 +134,17 @@ export default function Home() {
             {visible.map((item) => {
               const due = new Date(item.due);
               return <article key={item.id} className="group grid gap-3 py-5 sm:grid-cols-[116px_minmax(0,1fr)_160px_34px] sm:items-center">
-                <div><p className="text-sm font-semibold">{dateFormat.format(due)}</p><p className="mt-0.5 text-xs text-muted-foreground">{timeFormat.format(due)}</p><p className="mt-1 text-[11px] text-muted-foreground">{item.closes ? 'Closes' : 'Due'}</p></div>
-                <div><div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${courseStyles[item.courseShort]}`}>{item.courseShort}</span><span className="text-xs font-medium text-muted-foreground">{item.type}</span></div><h3 className="mt-2 font-semibold tracking-tight">{item.title}</h3><p className="mt-0.5 text-sm text-muted-foreground">{item.course}</p></div>
+                <div><p className="text-sm font-semibold">{dateFormat.format(due)}</p><p className="mt-0.5 text-xs text-muted-foreground">{item.sourceTime ?? timeFormat.format(due)}</p><p className="mt-1 text-[11px] text-muted-foreground">{item.closes ? 'Closes' : 'Due'}</p></div>
+                <div><div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${courseStyles[item.courseShort]}`}>{item.courseShort}</span><span className="text-xs font-medium text-muted-foreground">{item.type} · {item.platform ?? 'Learning Hub'}</span></div><h3 className="mt-2 font-semibold tracking-tight">{item.title}</h3><p className="mt-0.5 text-sm text-muted-foreground">{item.course}</p></div>
                 <div className="sm:text-right"><span className={`inline-flex rounded-full px-3 py-1.5 text-xs font-semibold ${item.submitted ? 'bg-emerald-50 text-emerald-700' : 'bg-muted text-muted-foreground'}`}>{item.submitted ? 'Submitted' : relativeLabel(due, now, item.closes)}</span></div>
-                <a href={item.url} target="_blank" rel="noreferrer" aria-label={`Open ${item.title} in Learning Hub`} className="grid size-9 place-items-center rounded-xl text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></a>
+                <a href={item.url} target="_blank" rel="noreferrer" aria-label={`Open ${item.title} in ${item.platform ?? 'Learning Hub'}`} className="grid size-9 place-items-center rounded-xl text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></a>
               </article>;
             })}
             {visible.length === 0 && <p className="py-16 text-center text-sm text-muted-foreground">No deadlines match this view.</p>}
           </div>
         </section>
-        <details className="mt-6 rounded-2xl border bg-card p-5">
-          <summary className="cursor-pointer text-sm font-semibold">Previous COMM 1100 dates · unverified since Sep 11 ({unverifiedDeadlines.length} items)</summary>
-          <p className="mt-3 text-sm text-muted-foreground">These are earlier observations, not confirmed current deadlines. Check with your instructor if you still expect access to this course.</p>
-          <ul className="mt-4 divide-y">{unverifiedDeadlines.map((item) => <li key={item.id} className="flex flex-col gap-1 py-3 text-sm sm:flex-row sm:justify-between"><a className="underline underline-offset-4" href={item.url} target="_blank" rel="noreferrer">{item.title}</a><span className="shrink-0 text-muted-foreground">{dateFormat.format(new Date(item.due))} · {timeFormat.format(new Date(item.due))}</span></li>)}</ul>
-        </details>
-        <footer className="mt-8 flex flex-col gap-2 border-t pt-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><p>Learning Hub last checked Sep 17, 3:46 PM PDT. All times Vancouver.</p><p>Learning Hub refresh scheduled daily at 6:00 PM Vancouver time</p></footer>
+        <p className="mt-6 text-xs text-muted-foreground">Connect dates were added from your screenshots. Connect times retain the PDT label shown there, including December; 11:59 PM PDT equals 10:59 PM Vancouver standard time in December.</p>
+        <footer className="mt-8 flex flex-col gap-2 border-t pt-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><p>Learning Hub last checked Sep 17, 3:46 PM PDT.</p><p>Course data refreshed on request · Countdowns update automatically</p></footer>
       </div>
     </main>
   );
