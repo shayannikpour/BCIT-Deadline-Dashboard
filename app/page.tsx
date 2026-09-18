@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { nextPendingDeadline, relativeLabel } from '@/lib/deadline-time';
 
 type DeadlineType = 'Assignment' | 'Quiz';
-type Deadline = { id: string; title: string; course: string; courseShort: string; type: DeadlineType; due: string; url: string; submitted?: boolean; closes?: boolean; platform?: 'Connect'; sourceTime?: string };
+type Deadline = { id: string; title: string; course: string; courseShort: string; type: DeadlineType; due: string; url: string; submitted?: boolean; closes?: boolean; platform?: 'Connect' | 'Cengage MindTap'; sourceTime?: string };
 
 const checkedAt = '2026-09-17T15:46:00-07:00';
 const recordedDeadlines: Deadline[] = [
@@ -48,7 +48,25 @@ const connectDeadlines: Deadline[] = [
   // Preserve the explicit PDT offset printed in the supplied screenshots, including December.
   sourceTime: '11:59 PM PDT', url: 'https://newconnect.mheducation.com/student/class/section/157271556',
 }));
-const deadlines = [...recordedDeadlines.filter((item) => item.courseShort !== 'COMM 1100'), ...connectDeadlines];
+const mindtapDeadlines: Deadline[] = [
+  ['01', 'Ten Principles of Economics', '2026-09-20', 'PDT'],
+  ['02', 'Thinking Like an Economist', '2026-09-27', 'PDT'],
+  ['04', 'The Market Forces of Supply and Demand', '2026-10-04', 'PDT'],
+  ['05', 'Elasticity and Its Application', '2026-10-11', 'PDT'],
+  ['06', 'Supply, Demand, and Government Policies', '2026-10-25', 'PDT'],
+  ['07', 'Consumers, Producers, and the Efficiency of Markets', '2026-11-01', 'PST'],
+  ['13', 'The Costs of Production', '2026-11-08', 'PST'],
+  ['14', 'Firms in Competitive Markets', '2026-11-22', 'PST'],
+  ['15', 'Monopoly', '2026-11-29', 'PST'],
+  ['16', 'Monopolistic Competition', '2026-12-06', 'PST'],
+  ['17', 'Oligopoly', '2026-12-13', 'PST'],
+].map(([chapter, title, date, zone]) => ({
+  id: `mindtap-chapter-${chapter}`, title: `Chapter ${chapter}: ${title}: End of Chapter Review`,
+  course: 'Microeconomics', courseShort: 'ECON 2100', type: 'Assignment', platform: 'Cengage MindTap',
+  due: `${date}T23:59:00${zone === 'PDT' ? '-07:00' : '-08:00'}`, sourceTime: `11:59 PM ${zone}`,
+  url: 'https://ng.cengage.com/static/nb/ui/evo/index.html?snapshotId=5469704&id=2945134356&eISBN=9781778419737',
+}));
+const deadlines = [...recordedDeadlines.filter((item) => item.courseShort !== 'COMM 1100'), ...connectDeadlines, ...mindtapDeadlines];
 const filters = ['All', 'Assignment', 'Quiz'] as const;
 const sortedDeadlines = [...deadlines].sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
 const courseStyles: Record<string, string> = {
@@ -57,6 +75,7 @@ const courseStyles: Record<string, string> = {
   'OPMT 1110': 'bg-violet-50 text-violet-700 ring-violet-100',
   'MKTG 1102': 'bg-amber-50 text-amber-700 ring-amber-100',
   'BSYS 1000': 'bg-emerald-50 text-emerald-700 ring-emerald-100',
+  'ECON 2100': 'bg-sky-50 text-sky-700 ring-sky-100',
 };
 const dateFormat = new Intl.DateTimeFormat('en-CA', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/Vancouver' });
 const timeFormat = new Intl.DateTimeFormat('en-CA', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Vancouver' });
@@ -143,7 +162,7 @@ export default function Home() {
             {visible.length === 0 && <p className="py-16 text-center text-sm text-muted-foreground">No deadlines match this view.</p>}
           </div>
         </section>
-        <p className="mt-6 text-xs text-muted-foreground">Connect dates were added from your screenshots. Connect times retain the PDT label shown there, including December; 11:59 PM PDT equals 10:59 PM Vancouver standard time in December.</p>
+        <p className="mt-6 text-xs text-muted-foreground">Connect and Cengage MindTap dates were added from your screenshots. Connect times retain the PDT label shown there, including December; 11:59 PM PDT equals 10:59 PM Vancouver standard time in December.</p>
         <footer className="mt-8 flex flex-col gap-2 border-t pt-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><p>Learning Hub last checked Sep 17, 3:46 PM PDT.</p><p>Course data refreshed on request · Countdowns update automatically</p></footer>
       </div>
     </main>
