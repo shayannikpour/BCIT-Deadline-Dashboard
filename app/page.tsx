@@ -345,13 +345,14 @@ const deadlines = [
   ...mindtapDeadlines,
   ...simnetDeadlines,
 ];
+const courses = [...new Set(deadlines.map((item) => item.courseShort))].sort();
 const filters = ['All', 'Assignment', 'Quiz'] as const;
 const sortedDeadlines = [...deadlines].sort(
   (a, b) => new Date(a.due).getTime() - new Date(b.due).getTime(),
 );
 const courseStyles: Record<string, string> = {
   'COMM 1100': 'bg-blue-50 text-blue-700 ring-blue-100',
-  'MKTG 2243': 'bg-orange-50 text-orange-700 ring-orange-100',
+  'MKTG 2243': 'bg-rose-50 text-rose-700 ring-rose-100',
   'OPMT 1110': 'bg-violet-50 text-violet-700 ring-violet-100',
   'MKTG 1102': 'bg-amber-50 text-amber-700 ring-amber-100',
   'BSYS 1000': 'bg-emerald-50 text-emerald-700 ring-emerald-100',
@@ -394,6 +395,7 @@ export default function Home() {
     };
   }, []);
   const [filter, setFilter] = useState<(typeof filters)[number]>('All');
+  const [courseFilter, setCourseFilter] = useState('All');
   const [query, setQuery] = useState('');
   const visible = useMemo(
     () =>
@@ -401,9 +403,13 @@ export default function Home() {
         const matchesType = filter === 'All' || item.type === filter;
         const haystack =
           `${item.title} ${item.course} ${item.courseShort} ${item.platform ?? 'Learning Hub'}`.toLowerCase();
-        return matchesType && haystack.includes(query.toLowerCase());
+        const matchesCourse =
+          courseFilter === 'All' || item.courseShort === courseFilter;
+        return (
+          matchesType && matchesCourse && haystack.includes(query.toLowerCase())
+        );
       }),
-    [filter, query],
+    [filter, query, courseFilter],
   );
   const next = nextPendingDeadline(sortedDeadlines, now);
   const assignments = deadlines.filter(
@@ -534,6 +540,7 @@ export default function Home() {
                     size="sm"
                     variant={filter === item ? 'secondary' : 'ghost'}
                     onClick={() => setFilter(item)}
+                    aria-pressed={filter === item}
                     className="rounded-lg px-3"
                   >
                     {item === 'Assignment'
@@ -546,6 +553,39 @@ export default function Home() {
               </div>
             </div>
           </div>
+          <div
+            className="flex flex-wrap items-center gap-2 border-b py-4"
+            role="group"
+            aria-label="Filter by class"
+          >
+            <span className="mr-1 text-xs font-semibold text-muted-foreground">
+              Class
+            </span>
+            {['All', ...courses].map((course) => (
+              <button
+                key={course}
+                type="button"
+                aria-pressed={courseFilter === course}
+                onClick={() => setCourseFilter(course)}
+                className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${course === 'All' ? 'bg-muted text-foreground' : courseStyles[course]} ${courseFilter === course ? 'ring-2 ring-current shadow-sm' : 'ring-1 hover:brightness-95'}`}
+              >
+                {course !== 'All' && (
+                  <span
+                    aria-hidden="true"
+                    className="size-2 rounded-full bg-current"
+                  />
+                )}
+                {course === 'All' ? 'All classes' : course}
+                {courseFilter === course && (
+                  <CheckCircle2 aria-hidden="true" className="size-3.5" />
+                )}
+              </button>
+            ))}
+          </div>
+          <p className="pt-4 text-xs text-muted-foreground" role="status">
+            {visible.length} {visible.length === 1 ? 'deadline' : 'deadlines'}
+            {courseFilter !== 'All' ? ` · ${courseFilter}` : ''}
+          </p>
           <div className="divide-y">
             {visible.map((item) => {
               const due = new Date(item.due);
