@@ -13,10 +13,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://bcit-deadline-dashboard-shayan.shayannk.chatgpt.site'),
+  metadataBase: new URL(
+    'https://bcit-deadline-dashboard-shayan.shayannk.chatgpt.site',
+  ),
   title: 'BCIT Deadline Dashboard',
   description:
-    'A private, always-current view of assignment and quiz deadlines for Fall 2026.',
+    'Shared BCIT deadlines with personal checklists and to-dos for Fall 2026.',
   openGraph: {
     title: 'BCIT Deadline Dashboard',
     description: 'Assignments and quizzes, all in one place.',
