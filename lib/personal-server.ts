@@ -108,15 +108,11 @@ export async function handlePersonal(
           ? body.username.trim().toLowerCase()
           : '';
       const password = typeof body.password === 'string' ? body.password : '';
-      if (
-        !/^[a-z0-9_]{3,24}$/.test(username) ||
-        password.length < 10 ||
-        password.length > 128
-      )
+      if (!/^[a-z0-9_]{3,24}$/.test(username) || password.length === 0)
         return json(
           {
             error:
-              'Use a username of 3–24 letters, numbers or underscores and a password of 10–128 characters.',
+              'Use a username of 3–24 letters, numbers or underscores and enter a password.',
           },
           400,
         );

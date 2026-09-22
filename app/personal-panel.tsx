@@ -197,8 +197,6 @@ export default function PersonalPanel({
                 autoComplete={
                   mode === 'signup' ? 'new-password' : 'current-password'
                 }
-                minLength={10}
-                maxLength={128}
                 required
                 className={inputStyle}
                 value={password}
@@ -216,9 +214,8 @@ export default function PersonalPanel({
             </Button>
           </div>
           <p id="account-help" className="mt-3 text-xs text-muted-foreground">
-            Usernames: 3–24 letters, numbers or underscores. Passwords: at least
-            10 characters. No email needed; keep your password safe, as email
-            recovery is unavailable.
+            Usernames: 3–24 letters, numbers or underscores. No email needed;
+            keep your password safe, as email recovery is unavailable.
           </p>
         </form>
       )}
