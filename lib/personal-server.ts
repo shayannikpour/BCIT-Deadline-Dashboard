@@ -20,7 +20,7 @@ const sessionLifetime = 60 * 60 * 24 * 30;
 const digest = (value: string) =>
   createHash('sha256').update(value).digest('hex');
 const passwordHash = (password: string, salt: string) =>
-  pbkdf2Sync(password, salt, 600000, 32, 'sha256').toString('hex');
+  pbkdf2Sync(password, salt, 100000, 32, 'sha256').toString('hex');
 const json = (value: unknown, status = 200, cookie?: string) =>
   Response.json(value, {
     status,
