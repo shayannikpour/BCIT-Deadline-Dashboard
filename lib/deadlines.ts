@@ -321,8 +321,31 @@ const simnetDeadlines: Deadline[] = [
   due: `${date}T23:59:00${date.startsWith('2026-11') ? '-08:00' : '-07:00'}`,
   url: 'https://bcit.simnetonline.com/sp/assignments/362759/tiles?folder=12432507',
 }));
+const marketingWeeklyQuizzes: Deadline[] = [
+  '2026-09-27',
+  '2026-10-04',
+  '2026-10-11',
+  '2026-10-18',
+  '2026-10-25',
+  '2026-11-01',
+  '2026-11-08',
+  '2026-11-15',
+  '2026-11-22',
+  '2026-11-29',
+  '2026-12-06',
+  '2026-12-13',
+].map((date) => ({
+  id: `mktg-weekly-quiz-${date}`,
+  title: 'Weekly Marketing Essentials Quiz',
+  course: 'Essentials of Marketing',
+  courseShort: 'MKTG 1102',
+  type: 'Quiz',
+  due: `${date}T23:59:00${date >= '2026-11-01' ? '-08:00' : '-07:00'}`,
+  url: 'https://learn.bcit.ca/d2l/lms/quizzing/user/quizzes_list.d2l?ou=1230783',
+}));
 export const deadlines = [
   ...recordedDeadlines.filter((item) => item.courseShort !== 'COMM 1100'),
+  ...marketingWeeklyQuizzes,
   ...connectDeadlines,
   ...mindtapDeadlines,
   ...simnetDeadlines,
