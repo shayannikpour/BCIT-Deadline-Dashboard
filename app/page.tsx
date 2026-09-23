@@ -122,7 +122,7 @@ export default function Home() {
                 BCIT Course Desk
               </p>
               <h1 className="text-lg font-semibold tracking-tight">
-                Deadline dashboard
+                Big D&apos;s Dashboard
               </h1>
             </div>
           </div>
