@@ -1,6 +1,8 @@
 'use client';
 import { useState } from 'react';
+import { CheckCircle2, ListTodo } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { deadlines } from '@/lib/deadlines';
 import type { usePersonal } from '@/lib/use-personal';
 type Props = ReturnType<typeof usePersonal>;
 const inputStyle =
@@ -17,6 +19,11 @@ export default function PersonalPanel({
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [title, setTitle] = useState('');
+  const completedDeadlines = deadlines
+    .filter((deadline) => personal.completed.includes(deadline.id))
+    .sort(
+      (a, b) => new Date(b.due).getTime() - new Date(a.due).getTime(),
+    );
   return (
     <section
       className="mb-8 rounded-3xl border bg-card p-5 sm:p-6"
@@ -70,8 +77,77 @@ export default function PersonalPanel({
         </p>
       ) : personal.user ? (
         <>
+          <div className="mt-6 rounded-2xl border bg-background p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-700">
+                  <CheckCircle2 className="size-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Completed course items</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Deadlines you checked off on the main dashboard.
+                  </p>
+                </div>
+              </div>
+              <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                {completedDeadlines.length}
+              </span>
+            </div>
+            {completedDeadlines.length ? (
+              <ul className="mt-4 divide-y">
+                {completedDeadlines.map((deadline) => (
+                  <li
+                    key={deadline.id}
+                    className="flex items-start gap-3 py-3 first:pt-0 last:pb-0"
+                  >
+                    <input
+                      type="checkbox"
+                      checked
+                      disabled={busy}
+                      className="mt-1 size-4 shrink-0 accent-primary"
+                      aria-label={`Mark ${deadline.title} unfinished`}
+                      onChange={() =>
+                        void act({
+                          action: 'complete',
+                          id: deadline.id,
+                          done: false,
+                        })
+                      }
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium leading-snug line-through decoration-emerald-600/50">
+                        {deadline.title}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {deadline.courseShort} · {deadline.type}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-4 text-sm text-muted-foreground">
+                Nothing checked off yet. Mark an item done on the main dashboard
+                and it will appear here.
+              </p>
+            )}
+          </div>
+
+          <div className="mt-4 rounded-2xl border bg-background p-4 sm:p-5">
+            <div className="flex items-center gap-3">
+              <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-violet-50 text-violet-700">
+                <ListTodo className="size-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Personal items</h3>
+                <p className="text-xs text-muted-foreground">
+                  Add anything else you want to remember.
+                </p>
+              </div>
+            </div>
           <form
-            className="mt-5 flex flex-col gap-2 sm:flex-row"
+            className="mt-4 flex flex-col gap-2 sm:flex-row"
             onSubmit={async (e) => {
               e.preventDefault();
               if (await act({ action: 'addTodo', title })) setTitle('');
@@ -136,6 +212,7 @@ export default function PersonalPanel({
               No personal to-dos yet.
             </p>
           )}
+          </div>
         </>
       ) : (
         <form
