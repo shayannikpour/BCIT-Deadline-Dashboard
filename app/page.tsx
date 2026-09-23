@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Clock3,
   GraduationCap,
+  History,
   ListChecks,
   Search,
 } from 'lucide-react';
@@ -76,6 +77,7 @@ export default function Home() {
   }, []);
   const [filter, setFilter] = useState<(typeof filters)[number]>('All');
   const [courseFilter, setCourseFilter] = useState('All');
+  const [showPastDue, setShowPastDue] = useState(true);
   const [query, setQuery] = useState('');
   const visible = useMemo(
     () =>
@@ -85,11 +87,16 @@ export default function Home() {
           `${item.title} ${item.course} ${item.courseShort} ${item.platform ?? 'Learning Hub'}`.toLowerCase();
         const matchesCourse =
           courseFilter === 'All' || item.courseShort === courseFilter;
+        const matchesDueDate =
+          showPastDue || new Date(item.due).getTime() >= now.getTime();
         return (
-          matchesType && matchesCourse && haystack.includes(query.toLowerCase())
+          matchesType &&
+          matchesCourse &&
+          matchesDueDate &&
+          haystack.includes(query.toLowerCase())
         );
       }),
-    [filter, query, courseFilter],
+    [filter, query, courseFilter, showPastDue, now],
   );
   const weekItems = useMemo(() => {
     const start = now.getTime();
@@ -234,7 +241,7 @@ export default function Home() {
           </div>
         </section>
         <section>
-          <div className="flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 Today · {dateFormat.format(now)}
@@ -246,7 +253,7 @@ export default function Home() {
                 Days remaining update automatically · Vancouver time
               </p>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap lg:justify-end">
               <label className="flex h-10 min-w-64 items-center gap-2 rounded-xl border bg-card px-3 text-sm shadow-sm focus-within:ring-2 focus-within:ring-ring/30">
                 <Search className="size-4 text-muted-foreground" />
                 <span className="sr-only">Search deadlines</span>
@@ -278,6 +285,16 @@ export default function Home() {
                   </Button>
                 ))}
               </div>
+              <Button
+                type="button"
+                variant={showPastDue ? 'outline' : 'secondary'}
+                onClick={() => setShowPastDue((current) => !current)}
+                aria-pressed={!showPastDue}
+                className="h-10 rounded-xl px-3 shadow-sm"
+              >
+                <History className="size-4" />
+                {showPastDue ? 'Hide past due' : 'Show past due'}
+              </Button>
             </div>
           </div>
           <div
