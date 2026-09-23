@@ -110,11 +110,11 @@ export default function Home() {
   }, [now, completed]);
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="dashboard-shell min-h-screen text-foreground">
       <div className="mx-auto w-full max-w-[1180px] px-5 pb-16 pt-6 sm:px-8 lg:px-10">
-        <header className="flex items-center justify-between gap-3 border-b border-border/80 pb-5">
+        <header className="dashboard-header flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-5">
           <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
+            <div className="brand-mark grid size-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
               <GraduationCap className="size-5" />
             </div>
             <div>
@@ -140,7 +140,12 @@ export default function Home() {
           </div>
         </header>
 
-        <section className="grid gap-5 pb-8 pt-6 lg:grid-cols-[1.18fr_0.82fr] lg:pt-8">
+        <div className="dashboard-intro pt-8 sm:pt-12">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-muted-foreground">Fall 2026 · BCIT</p>
+          <h2 className="mt-3 text-4xl font-bold tracking-[-0.05em] sm:text-6xl">Big plans.<br className="sm:hidden" /> <span className="intro-accent">Zero surprises.</span></h2>
+          <p className="mt-3 text-sm text-muted-foreground sm:text-base">Your classes, your deadlines, your next move. All together.</p>
+        </div>
+        <section className="overview-grid grid gap-5 pb-8 pt-6 lg:grid-cols-[1.18fr_0.82fr] lg:pt-8">
           <div className="relative overflow-hidden rounded-[28px] bg-primary p-5 text-primary-foreground shadow-[0_18px_55px_rgb(19_55_64/12%)] sm:p-7">
             <div className="absolute -right-14 -top-16 size-52 rounded-full border border-white/10" />
             <div className="absolute -right-3 -top-4 size-28 rounded-full bg-white/[0.04]" />
@@ -198,7 +203,7 @@ export default function Home() {
               return (
                 <article
                   key={exam.id}
-                  className="rounded-[24px] border bg-card p-5 shadow-sm"
+                  className="exam-card rounded-[24px] border bg-card p-5 shadow-sm"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700">
@@ -330,14 +335,14 @@ export default function Home() {
             {visible.length} {visible.length === 1 ? 'deadline' : 'deadlines'}
             {courseFilter !== 'All' ? ` · ${courseFilter}` : ''}
           </p>
-          <div className="divide-y">
+          <div className="deadline-list">
             {visible.map((item) => {
               const due = new Date(item.due);
               const isCompleted = completed.has(item.id);
               return (
                 <article
                   key={item.id}
-                  className="group grid gap-3 py-5 sm:grid-cols-[116px_minmax(0,1fr)_160px_34px] sm:items-center"
+                  className="deadline-card group grid gap-3 py-5 sm:grid-cols-[116px_minmax(0,1fr)_160px_34px] sm:items-center"
                 >
                   <div>
                     <p className="text-sm font-semibold">
