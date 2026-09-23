@@ -16,7 +16,9 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { relativeLabel } from '@/lib/deadline-time';
 
 import { deadlines } from '@/lib/deadlines';
+import { exams } from '@/lib/exams';
 import { usePersonal } from '@/lib/use-personal';
+import CalendarView from './calendar-view';
 const checkedAt = '2026-09-17T15:46:00-07:00';
 const courses = [...new Set(deadlines.map((item) => item.courseShort))].sort();
 const filters = ['All', 'Assignment', 'Quiz'] as const;
@@ -31,32 +33,6 @@ const courseStyles: Record<string, string> = {
   'BSYS 1000': 'bg-emerald-50 text-emerald-700 ring-emerald-100',
   'ECON 2100': 'bg-sky-50 text-sky-700 ring-sky-100',
 };
-const exams = [
-  {
-    id: 'mktg-1102-midterm-one',
-    courseShort: 'MKTG 1102',
-    title: 'Midterm Exam 1',
-    due: '2026-10-01T08:30:00-07:00',
-    details: [
-      '30–40 multiple-choice questions',
-      'Chapters 1, 2, 15 & 3',
-      '50 minutes · Closed book · Learning Hub',
-    ],
-    note: 'MKTG 2243 meets at 9:30 a.m. after the exam.',
-  },
-  {
-    id: 'opmt-1110-test-one',
-    courseShort: 'OPMT 1110',
-    title: 'Test 1',
-    due: '2026-10-06T08:30:00-07:00',
-    details: [
-      'Modules 1–6 · Worth 15%',
-      'Written answers — show your work',
-      'Book with Accessibility Services as soon as possible',
-    ],
-    note: 'Erika’s class begins at 9:30 a.m.',
-  },
-] as const;
 const dateFormat = new Intl.DateTimeFormat('en-CA', {
   weekday: 'short',
   month: 'short',
@@ -143,15 +119,18 @@ export default function Home() {
               </h1>
             </div>
           </div>
-          <Link
-            href="/account"
-            className={buttonVariants({
-              size: 'lg',
-              className: 'h-10 rounded-xl px-4',
-            })}
-          >
-            {account.personal.user ? 'My dashboard' : 'Sign up'}
-          </Link>
+          <div className="flex items-center gap-2">
+            <CalendarView />
+            <Link
+              href="/account"
+              className={buttonVariants({
+                size: 'lg',
+                className: 'h-10 rounded-xl px-4',
+              })}
+            >
+              {account.personal.user ? 'My dashboard' : 'Sign up'}
+            </Link>
+          </div>
         </header>
 
         <section className="grid gap-5 pb-8 pt-6 lg:grid-cols-[1.18fr_0.82fr] lg:pt-8">
