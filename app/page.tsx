@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowUpRight,
@@ -47,6 +47,7 @@ const timeFormat = new Intl.DateTimeFormat('en-CA', {
 });
 
 export default function Home() {
+  const pageRef = useRef<HTMLElement>(null);
   const account = usePersonal();
   const completed = useMemo(
     () => new Set(account.personal.completed),
@@ -109,8 +110,29 @@ export default function Home() {
       .slice(0, 5);
   }, [now, completed]);
 
+  useEffect(() => {
+    const page = pageRef.current;
+    if (!page || !('IntersectionObserver' in window) ||
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      }
+    }, { threshold: 0.08, rootMargin: '0px 0px 40px 0px' });
+
+    page.querySelectorAll('[data-reveal]').forEach((card) => {
+      if (!card.classList.contains('is-visible')) observer.observe(card);
+    });
+    page.classList.add('motion-ready');
+    return () => observer.disconnect();
+  }, [visible]);
+
   return (
-    <main className="dashboard-shell min-h-screen text-foreground">
+    <main ref={pageRef} className="dashboard-shell min-h-screen text-foreground">
       <div className="mx-auto w-full max-w-[1180px] px-5 pb-16 pt-6 sm:px-8 lg:px-10">
         <header className="dashboard-header flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-5">
           <div className="flex items-center gap-3">
@@ -141,9 +163,9 @@ export default function Home() {
         </header>
 
         <section className="overview-grid grid gap-5 pb-8 pt-6 lg:grid-cols-[1.18fr_0.82fr] lg:pt-8">
-          <div className="relative overflow-hidden rounded-[28px] bg-primary p-5 text-primary-foreground shadow-[0_18px_55px_rgb(19_55_64/12%)] sm:p-7">
-            <div className="absolute -right-14 -top-16 size-52 rounded-full border border-white/10" />
-            <div className="absolute -right-3 -top-4 size-28 rounded-full bg-white/[0.04]" />
+          <div data-reveal className="relative overflow-hidden rounded-[28px] bg-primary p-5 text-primary-foreground shadow-[0_18px_55px_rgb(19_55_64/12%)] sm:p-7">
+            <div aria-hidden="true" className="week-orbit absolute -right-14 -top-16 size-52 rounded-full border border-white/10" />
+            <div aria-hidden="true" className="week-orb absolute -right-3 -top-4 size-28 rounded-full bg-white/[0.04]" />
             <div className="relative flex items-center gap-3">
               <div className="grid size-10 place-items-center rounded-xl bg-white/10">
                 <ListChecks className="size-5 text-[#e9ff9e]" />
@@ -198,6 +220,7 @@ export default function Home() {
               return (
                 <article
                   key={exam.id}
+                  data-reveal
                   className="exam-card rounded-[24px] border bg-card p-5 shadow-sm"
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -337,6 +360,7 @@ export default function Home() {
               return (
                 <article
                   key={item.id}
+                  data-reveal
                   className="deadline-card group grid gap-3 py-5 sm:grid-cols-[116px_minmax(0,1fr)_160px_34px] sm:items-center"
                 >
                   <div>

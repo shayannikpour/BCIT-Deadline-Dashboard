@@ -113,6 +113,29 @@ body {
   width: 22rem; height: 22rem; border: 1px solid #d2ed9926;
   box-shadow: 0 0 0 35px #d2ed9908, 0 0 0 70px #d2ed9906;
 }
+.week-orbit {
+  pointer-events: none;
+  animation: orbit-drift 18s ease-in-out infinite alternate;
+}
+.week-orb {
+  pointer-events: none;
+  animation: orb-drift 13s ease-in-out infinite alternate;
+}
+@keyframes orbit-drift {
+  from { transform: translate3d(-14px, 12px, 0) scale(0.94); }
+  to { transform: translate3d(22px, -14px, 0) scale(1.08); }
+}
+@keyframes orb-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-30px, 28px, 0); }
+}
+.motion-ready [data-reveal] {
+  transition: opacity 650ms ease, transform 650ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.motion-ready [data-reveal]:not(.is-visible) {
+  opacity: 0;
+  transform: translate3d(0, 24px, 0) scale(0.985);
+}
 .exam-card {
   position: relative;
   overflow: hidden;
@@ -149,6 +172,12 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   .deadline-card { transition: none; }
+  .week-orbit, .week-orb { animation: none; }
+  .motion-ready [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
 
 .dark {
