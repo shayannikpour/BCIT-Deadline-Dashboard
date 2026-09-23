@@ -57,6 +57,8 @@ body {
 }
 
 :root {
+  --font-geist-sans: Arial, Helvetica, sans-serif;
+  --font-geist-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --background: oklch(0.985 0.008 154);
   --foreground: oklch(0.245 0.034 190);
   --card: oklch(0.997 0.003 150);
