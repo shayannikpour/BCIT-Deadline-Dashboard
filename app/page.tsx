@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import {
   ArrowUpRight,
   BookOpenCheck,
@@ -8,14 +9,14 @@ import {
   CheckCircle2,
   Clock3,
   GraduationCap,
+  ListChecks,
   Search,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { nextPendingDeadline, relativeLabel } from '@/lib/deadline-time';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { relativeLabel } from '@/lib/deadline-time';
 
 import { deadlines } from '@/lib/deadlines';
 import { usePersonal } from '@/lib/use-personal';
-import PersonalPanel from './personal-panel';
 const checkedAt = '2026-09-17T15:46:00-07:00';
 const courses = [...new Set(deadlines.map((item) => item.courseShort))].sort();
 const filters = ['All', 'Assignment', 'Quiz'] as const;
@@ -30,6 +31,32 @@ const courseStyles: Record<string, string> = {
   'BSYS 1000': 'bg-emerald-50 text-emerald-700 ring-emerald-100',
   'ECON 2100': 'bg-sky-50 text-sky-700 ring-sky-100',
 };
+const exams = [
+  {
+    id: 'mktg-1102-midterm-one',
+    courseShort: 'MKTG 1102',
+    title: 'Midterm Exam 1',
+    due: '2026-10-01T08:30:00-07:00',
+    details: [
+      '30–40 multiple-choice questions',
+      'Chapters 1, 2, 15 & 3',
+      '50 minutes · Closed book · Learning Hub',
+    ],
+    note: 'MKTG 2243 meets at 9:30 a.m. after the exam.',
+  },
+  {
+    id: 'opmt-1110-test-one',
+    courseShort: 'OPMT 1110',
+    title: 'Test 1',
+    due: '2026-10-06T08:30:00-07:00',
+    details: [
+      'Modules 1–6 · Worth 15%',
+      'Written answers — show your work',
+      'Book with Accessibility Services as soon as possible',
+    ],
+    note: 'Erika’s class begins at 9:30 a.m.',
+  },
+] as const;
 const dateFormat = new Intl.DateTimeFormat('en-CA', {
   weekday: 'short',
   month: 'short',
@@ -44,7 +71,10 @@ const timeFormat = new Intl.DateTimeFormat('en-CA', {
 
 export default function Home() {
   const account = usePersonal();
-  const completed = new Set(account.personal.completed);
+  const completed = useMemo(
+    () => new Set(account.personal.completed),
+    [account.personal.completed],
+  );
   const [now, setNow] = useState(() => new Date(checkedAt));
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -85,22 +115,21 @@ export default function Home() {
       }),
     [filter, query, courseFilter],
   );
-  const next = nextPendingDeadline(
-    sortedDeadlines.map((item) => ({
-      ...item,
-      submitted: completed.has(item.id),
-    })),
-    now,
-  );
-  const assignments = deadlines.filter(
-    (item) => item.type === 'Assignment',
-  ).length;
-  const quizzes = deadlines.filter((item) => item.type === 'Quiz').length;
+  const weekItems = useMemo(() => {
+    const start = now.getTime();
+    const end = start + 7 * 24 * 60 * 60 * 1000;
+    return sortedDeadlines
+      .filter((item) => {
+        const due = new Date(item.due).getTime();
+        return due >= start && due <= end && !completed.has(item.id);
+      })
+      .slice(0, 5);
+  }, [now, completed]);
 
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto w-full max-w-[1180px] px-5 pb-16 pt-6 sm:px-8 lg:px-10">
-        <header className="flex items-center justify-between border-b border-border/80 pb-5">
+        <header className="flex items-center justify-between gap-3 border-b border-border/80 pb-5">
           <div className="flex items-center gap-3">
             <div className="grid size-10 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
               <GraduationCap className="size-5" />
@@ -114,79 +143,117 @@ export default function Home() {
               </h1>
             </div>
           </div>
-          <div className="hidden items-center gap-2 text-sm text-muted-foreground sm:flex">
-            <span className="size-2 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgb(16_185_129/12%)]" />
-            Checked Sep 17 at 3:46 PM PDT
-          </div>
+          <Link
+            href="/account"
+            className={buttonVariants({
+              size: 'lg',
+              className: 'h-10 rounded-xl px-4',
+            })}
+          >
+            {account.personal.user ? 'My dashboard' : 'Sign up'}
+          </Link>
         </header>
 
-        <section className="grid gap-5 pb-8 pt-8 lg:grid-cols-[1.35fr_0.65fr]">
-          <div className="relative overflow-hidden rounded-[28px] bg-primary p-7 text-primary-foreground shadow-[0_18px_55px_rgb(19_55_64/12%)] sm:p-9">
+        <section className="grid gap-5 pb-8 pt-6 lg:grid-cols-[1.18fr_0.82fr] lg:pt-8">
+          <div className="relative overflow-hidden rounded-[28px] bg-primary p-5 text-primary-foreground shadow-[0_18px_55px_rgb(19_55_64/12%)] sm:p-7">
             <div className="absolute -right-14 -top-16 size-52 rounded-full border border-white/10" />
             <div className="absolute -right-3 -top-4 size-28 rounded-full bg-white/[0.04]" />
-            <p className="mb-8 text-xs font-semibold uppercase tracking-[0.18em] text-white/60">
-              Next up
-            </p>
-            {next ? (
-              <div className="relative max-w-xl">
-                <span className="inline-flex rounded-full bg-[#e9ff9e] px-3 py-1 text-xs font-semibold text-[#273c10]">
-                  {relativeLabel(new Date(next.due), now, next.closes)}
-                </span>
-                <h2 className="mt-4 text-3xl font-semibold leading-tight tracking-[-0.035em] sm:text-[42px]">
-                  {next.title}
-                </h2>
-                <p className="mt-3 text-sm text-white/65">
-                  {next.courseShort} · {next.platform ?? 'Learning Hub'} ·{' '}
-                  {next.closes ? 'Availability ends' : 'Due date'}
+            <div className="relative flex items-center gap-3">
+              <div className="grid size-10 place-items-center rounded-xl bg-white/10">
+                <ListChecks className="size-5 text-[#e9ff9e]" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/60">
+                  Your next 7 days
                 </p>
-                <div className="mt-7 flex flex-wrap items-center gap-4 text-sm">
-                  <span className="inline-flex items-center gap-2">
-                    <CalendarDays className="size-4 text-[#e9ff9e]" />
-                    {dateFormat.format(new Date(next.due))}
-                  </span>
-                  <span className="inline-flex items-center gap-2">
-                    <Clock3 className="size-4 text-[#e9ff9e]" />
-                    {next.sourceTime ?? timeFormat.format(new Date(next.due))}
-                  </span>
-                </div>
+                <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                  This week’s work
+                </h2>
               </div>
-            ) : (
-              <p className="relative text-2xl font-semibold">
-                No upcoming unfinished items in the latest check.
-              </p>
-            )}
+            </div>
+            <div className="relative mt-5 divide-y divide-white/10">
+              {weekItems.map((item) => (
+                <a
+                  key={item.id}
+                  href={item.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group grid gap-2 py-3.5 first:pt-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
+                      <span className="rounded-full bg-white/10 px-2 py-1 font-semibold text-white/90">
+                        {item.courseShort}
+                      </span>
+                      <span>{item.type === 'Quiz' ? 'Quiz' : 'Coursework'}</span>
+                    </div>
+                    <p className="mt-2 font-semibold leading-snug text-white group-hover:text-[#e9ff9e]">
+                      {item.title}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs font-medium text-white/70 sm:justify-end">
+                    <span>{dateFormat.format(new Date(item.due))}</span>
+                    <span className="rounded-full bg-[#e9ff9e] px-2 py-1 text-[#273c10]">
+                      {relativeLabel(new Date(item.due), now, item.closes)}
+                    </span>
+                  </div>
+                </a>
+              ))}
+              {weekItems.length === 0 && (
+                <p className="py-8 text-sm text-white/70">
+                  No unfinished quizzes or coursework are due in the next seven days.
+                </p>
+              )}
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-1">
-            <div className="rounded-[24px] border bg-card p-5 shadow-sm">
-              <div className="flex items-start justify-between">
-                <BookOpenCheck className="size-5 text-primary" />
-                <span className="text-xs text-muted-foreground">Fall 2026</span>
-              </div>
-              <p className="mt-7 text-3xl font-semibold tracking-tight">
-                {assignments}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Assignments posted
-              </p>
-            </div>
-            <div className="rounded-[24px] border bg-card p-5 shadow-sm">
-              <div className="flex items-start justify-between">
-                <CheckCircle2 className="size-5 text-[#7c5cff]" />
-                <span className="text-xs text-muted-foreground">
-                  9 courses checked
-                </span>
-              </div>
-              <p className="mt-7 text-3xl font-semibold tracking-tight">
-                {quizzes}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Quizzes with dates
-              </p>
-            </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+            {exams.map((exam) => {
+              const due = new Date(exam.due);
+              return (
+                <article
+                  key={exam.id}
+                  className="rounded-[24px] border bg-card p-5 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700">
+                      <BookOpenCheck className="size-5" />
+                    </div>
+                    <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                      {relativeLabel(due, now)}
+                    </span>
+                  </div>
+                  <p className="mt-4 text-xs font-semibold text-muted-foreground">
+                    {exam.courseShort} · Upcoming exam
+                  </p>
+                  <h2 className="mt-1 text-xl font-semibold tracking-tight">
+                    {exam.title}
+                  </h2>
+                  <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-medium">
+                    <span className="inline-flex items-center gap-1.5">
+                      <CalendarDays className="size-4 text-muted-foreground" />
+                      {dateFormat.format(due)}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Clock3 className="size-4 text-muted-foreground" />
+                      {timeFormat.format(due)}
+                    </span>
+                  </p>
+                  <ul className="mt-3 space-y-1.5 text-xs leading-relaxed text-muted-foreground">
+                    {exam.details.map((detail) => (
+                      <li key={detail} className="flex gap-2">
+                        <span aria-hidden="true" className="mt-2 size-1 shrink-0 rounded-full bg-primary" />
+                        <span>{detail}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-3 border-t pt-3 text-xs text-muted-foreground">
+                    {exam.note}
+                  </p>
+                </article>
+              );
+            })}
           </div>
         </section>
-
-        <PersonalPanel {...account} />
         <section>
           <div className="flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
