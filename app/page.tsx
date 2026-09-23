@@ -140,11 +140,6 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="dashboard-intro pt-8 sm:pt-12">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-muted-foreground">Fall 2026 · BCIT</p>
-          <h2 className="mt-3 text-4xl font-bold tracking-[-0.05em] sm:text-6xl">Big plans.<br className="sm:hidden" /> <span className="intro-accent">Zero surprises.</span></h2>
-          <p className="mt-3 text-sm text-muted-foreground sm:text-base">Your classes, your deadlines, your next move. All together.</p>
-        </div>
         <section className="overview-grid grid gap-5 pb-8 pt-6 lg:grid-cols-[1.18fr_0.82fr] lg:pt-8">
           <div className="relative overflow-hidden rounded-[28px] bg-primary p-5 text-primary-foreground shadow-[0_18px_55px_rgb(19_55_64/12%)] sm:p-7">
             <div className="absolute -right-14 -top-16 size-52 rounded-full border border-white/10" />

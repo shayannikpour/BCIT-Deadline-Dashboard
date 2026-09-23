@@ -104,7 +104,6 @@ body {
   transform: rotate(-6deg);
 }
 .brand-mark svg { transform: rotate(6deg); }
-.intro-accent { color: #477350; }
 .overview-grid > div:first-child {
   background: radial-gradient(ellipse at top right, #386a53, transparent 65%), #173a34;
   border: 1px solid #426652;
@@ -142,7 +141,6 @@ body {
   .dashboard-header { row-gap: 20px; }
   .dashboard-header > div:last-child { width: 100%; }
   .dashboard-header > div:last-child > * { flex: 1; }
-  .dashboard-intro h2 { line-height: 1.08; }
   .deadline-card { grid-template-columns: minmax(0, 1fr) 44px; padding: 18px; gap: 14px; }
   .deadline-card > div:first-child { grid-column: 1 / -1; }
   .deadline-card > div:nth-child(2) { grid-column: 1 / -1; }
