@@ -14,6 +14,7 @@ export const exams: readonly Exam[] = [
     title: 'Midterm Exam 1',
     due: '2026-10-01T08:30:00-07:00',
     details: [
+      'Location: Telus Theatre',
       '30–40 multiple-choice questions',
       'Chapters 1, 2, 15 & 3',
       '50 minutes · Closed book · Learning Hub',
